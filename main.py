@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import os
 from aiogram import types
 from yandex_music import Client
+from funcs import is_admin
 import yandex_music
 import yandex_music.artist
 import yandex_music.artist.artist
@@ -20,13 +21,6 @@ client = Client(token_music).init()
 bot = aiogram.Bot(token)
 dp = aiogram.Dispatcher()
 router = aiogram.Router()
-
-
-
-@dp.message(Command("start"))
-async def start_message(message: types.Message):
-    await message.reply("ку")
-
 
 @dp.message(Command("search"))
 async def music_cmd(message = types.Message):
@@ -55,6 +49,7 @@ async def music_cmd(message = types.Message):
         os.remove(name)
     except:
         await message.reply("что-то пошло не так")
+
 @dp.message()
 async def notcmd_music(message = types.Message):
     if str(message.text).upper().startswith("ПЕСНЯ") or str(message.text).upper().startswith("НАЙТИ"):     
@@ -84,7 +79,11 @@ async def notcmd_music(message = types.Message):
         except:
             await message.reply("что-то пошло не так")
 
+
 async def main():
+    dp.include_router(router)
+
+    await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 asyncio.run(main())
