@@ -1,18 +1,14 @@
 import asyncio
 import aiogram
-from aiogram.types import FSInputFile
+from aiogram.types import FSInputFile, InputFileUnion, InputMediaVideo
 from aiogram.filters import Command
 from dotenv import load_dotenv
 import os
 from aiogram import types
 from yandex_music import Client
-from funcs import is_admin
-import yandex_music
-import yandex_music.artist
-import yandex_music.artist.artist
-import yandex_music.artist.artist_albums
-import yandex_music.artist.artist_tracks
-import yandex_music.search
+import yt_dlp
+import time
+from pathlib import Path
 
 load_dotenv()
 token = os.getenv('token')
@@ -21,6 +17,9 @@ client = Client(token_music).init()
 bot = aiogram.Bot(token)
 dp = aiogram.Dispatcher()
 router = aiogram.Router()
+
+def timestamp():
+    return int(time.time() * 1000)
 
 @dp.message(Command("search"))
 async def music_cmd(message = types.Message):
@@ -51,7 +50,7 @@ async def music_cmd(message = types.Message):
         await message.reply("что-то пошло не так")
 
 @dp.message()
-async def notcmd_music(message = types.Message):
+async def notcmd(message = types.Message):
     if str(message.text).upper().startswith("ПЕСНЯ") or str(message.text).upper().startswith("НАЙТИ"):     
         textmess = message.text[5:]
         search_result = client.search(textmess)
@@ -78,6 +77,41 @@ async def notcmd_music(message = types.Message):
             os.remove(name)
         except:
             await message.reply("что-то пошло не так")
+    elif str(message.text).upper().startswith("ЮТ"):
+        try:
+            textmess = message.text[2:]
+            await message.reply("начинаю")
+            name = str(timestamp()) + ".mp4"
+            real_full_name = str(Path.cwd()) + '\\' + name
+            params = { 
+                'outtmpl' : real_full_name,
+                'merge_output_format': 'mp4'
+            }
+            yt_dlp.YoutubeDL(params).download([textmess])
+            file = FSInputFile(name)
+            await bot.send_video(str(message.chat.id), file)
+        except:
+            await message.reply("что-то пошло не так")
+        finally:
+            os.remove(name)
+    elif str(message.text).upper().startswith("МУЗ"):
+        try:
+            textmess = message.text[2:]
+            await message.reply("начинаю")
+            name = str(timestamp()) + ".mp3 "
+            real_full_name = str(Path.cwd()) + '\\' + name
+            params = { 
+                'outtmpl' : real_full_name,
+                'merge_output_format': 'mp3',
+            }
+            yt_dlp.YoutubeDL(params).download([textmess])
+            file = FSInputFile(name)
+            await bot.send_video(str(message.chat.id), file)
+        except:
+            await message.reply("что-то пошло не так")
+        finally:
+            os.remove(name)
+            
 
 
 async def main():
