@@ -40,7 +40,7 @@ async def music_cmd(message = types.Message):
         else:
             first = search_result['best']['result']
             name = search_result.best.result.title + ', ' + search_result.best.result.artists[0]['name']
-        print(message.chat.id, message.from_user.id, message.text)
+        print(message.chat.id, timestamp(), message.text)
         name = name + ".mp3"
         file = FSInputFile(name)
         first.download(name)
@@ -55,6 +55,7 @@ async def notcmd(message = types.Message):
         textmess = message.text[5:]
         search_result = client.search(textmess)
         wereArtist = 0
+        wereAlbum = 0
         type_ = search_result.best.type
         if type_ == "artist":
             artist_id = search_result.best.result.id
@@ -62,21 +63,26 @@ async def notcmd(message = types.Message):
             music_name = music_needed.tracks
             music_title = music_name[0]['title']
             wereArtist = 1
-        try:
+        if type_ == "album":
+            wereAlbum = 1
+        if True:
             if(wereArtist):
                 first = client.search(music_title)['best']['result']
                 name = music_title + ', ' + search_result.best.result.name
+            elif(wereAlbum):
+                first = search_result["tracks"]["results"][0]
+                name = search_result["tracks"]["results"][0]["title"] + ',' + search_result["tracks"]["results"][0]["artists"][0]["name"]
             else:
                 first = search_result['best']['result']
                 name = search_result.best.result.title + ', ' + search_result.best.result.artists[0]['name']
-            print(message.chat.id, message.from_user.id, message.text)
+            print(message.chat.id, timestamp(), message.text)
             name = name + ".mp3"
-            file = FSInputFile(name)
             first.download(name)
+            file = FSInputFile(name)
             await message.reply_audio(file)
             os.remove(name)
-        except:
-            await message.reply("что-то пошло не так")
+        # except:
+        #     await message.reply("что-то пошло не так")
     elif str(message.text).upper().startswith("ЮТ"):
         try:
             textmess = message.text[2:]
@@ -85,7 +91,8 @@ async def notcmd(message = types.Message):
             real_full_name = str(Path.cwd()) + '\\' + name
             params = { 
                 'outtmpl' : real_full_name,
-                'merge_output_format': 'mp4'
+                'merge_output_format': 'mp4',
+                'cookies_from_browser':'firefox'
             }
             yt_dlp.YoutubeDL(params).download([textmess])
             file = FSInputFile(name)
@@ -94,24 +101,6 @@ async def notcmd(message = types.Message):
             await message.reply("что-то пошло не так")
         finally:
             os.remove(name)
-    elif str(message.text).upper().startswith("МУЗ"):
-        try:
-            textmess = message.text[2:]
-            await message.reply("начинаю")
-            name = str(timestamp()) + ".mp3 "
-            real_full_name = str(Path.cwd()) + '\\' + name
-            params = { 
-                'outtmpl' : real_full_name,
-                'merge_output_format': 'mp3',
-            }
-            yt_dlp.YoutubeDL(params).download([textmess])
-            file = FSInputFile(name)
-            await bot.send_video(str(message.chat.id), file)
-        except:
-            await message.reply("что-то пошло не так")
-        finally:
-            os.remove(name)
-            
 
 
 async def main():
