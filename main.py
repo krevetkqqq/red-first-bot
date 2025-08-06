@@ -2,12 +2,9 @@ import asyncio
 from typing import Optional
 import aiogram
 from aiogram.types import FSInputFile
-from aiogram.filters import Command
-from aiogram.fsm.state import StatesGroup, State
-from aiogram.fsm.context import FSMContext
 from dotenv import load_dotenv
 import os
-from aiogram import types
+from aiogram import types, F
 from yandex_music import Client, Search
 import yt_dlp
 import time
@@ -26,39 +23,13 @@ global_search_result: Optional[Search] = None
 def timestamp():
     return int(time.time() * 1000)
 
-@dp.message(Command("search"))
-async def music_cmd(message = types.Message):
-    textmess = message.text[5:]
-    search_result = client.search(textmess)
-    wereArtist = 0
-    type_ = search_result.best.type
-    if type_ == "artist":
-        artist_id = search_result.best.result.id
-        music_needed = client.artists_tracks(artist_id, 0, 1)
-        music_name = music_needed.tracks
-        music_title = music_name[0]['title']
-        wereArtist = 1
-    try:
-        if(wereArtist):
-            first = client.search(music_title)['best']['result']
-            name = music_title + ', ' + search_result.best.result.name
-        else:
-            first = search_result['best']['result']
-            name = search_result.best.result.title + ', ' + search_result.best.result.artists[0]['name']
-        print(message.chat.id, timestamp(), message.text)
-        name = name + ".mp3"
-        file = FSInputFile(name)
-        first.download(name)
-        await message.reply_audio(file)
-        os.remove(name)
-    except:
-        await message.reply("что-то пошло не так")
-
-@dp.message()
-async def notcmd(message = types.Message):
+@dp.message(F.text.lower().startswith("песня"))
+async def song(message):
     global global_search_result
-    if str(message.text).upper().startswith("ПЕСНЯ") or str(message.text).upper().startswith("НАЙТИ"):     
-        textmess = message.text[5:]
+    # if str(message.text).upper().startswith("ПЕСНЯ") or str(message.text).upper().startswith("НАЙТИ") or str(message.text).upper().startswith("АЛЬБОМ"):    
+    if True:
+        newtext = str(message.text).split()
+        textmess = ' '.join(newtext[1:]) if len(newtext) > 1 else ""
         search_result = client.search(textmess)
         wereArtist = 0
         wereAlbum = 0
@@ -87,13 +58,23 @@ async def notcmd(message = types.Message):
                 name = search_result.best.result.title + ', ' + search_result.best.result.artists[0]['name']
             print(message.chat.id, timestamp(), message.text)
             name = name + ".mp3"
+            name = name.replace("/"," или ")
+            char_to_replace = "\\:?\"<>|*"
+            for i in char_to_replace:
+                name = name.replace(i,"")
             first.download(name)
             file = FSInputFile(name)
             await message.reply_audio(file)
             os.remove(name)
         # except:
         #     await message.reply("что-то пошло не так")
-    elif str(message.text).upper().startswith("ЮТ"):
+
+@dp.message(F.text.lower().startswith("альбом"))
+async def album(message):
+    await song(message)
+
+@dp.message(F.text.lower().startswith("ют"))
+async def YT(message):
         try:
             textmess = message.text[2:]
             await message.reply("начинаю")
@@ -111,7 +92,9 @@ async def notcmd(message = types.Message):
             await message.reply("что-то пошло не так")
         finally:
             os.remove(name)
-    else:
+
+@dp.message()
+async def TryParseNum(message):
         if True:
             id = int(message.text)
             first = global_search_result["tracks"]["results"][id]
