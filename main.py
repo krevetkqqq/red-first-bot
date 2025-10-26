@@ -9,6 +9,7 @@ from yandex_music import Client, Search
 import yt_dlp
 import time
 from pathlib import Path
+import threading
 
 load_dotenv()
 token = os.getenv('token')
@@ -18,7 +19,7 @@ bot = aiogram.Bot(token)
 dp = aiogram.Dispatcher()
 router = aiogram.Router()
 
-global_search_result: Optional[Search] = None
+global_search_result: dict = { }
 
 def timestamp():
     return int(time.time() * 1000)
@@ -48,14 +49,14 @@ async def song(message):
             elif(wereAlbum):
                 for index, track in enumerate(search_result["tracks"]["results"]):
                     await message.reply(str(index) + ", "+ track["artists"][0]["name"] + ", " + track["title"])
-                global_search_result = search_result
+                global_search_result[message.chat.id] = search_result
                 return
             else:
                 first = search_result['best']['result']
                 name = search_result.best.result.title + ', ' + search_result.best.result.artists[0]['name']
             print(message.chat.id, timestamp(), message.text)
             name = name + ".mp3"
-            name = name.replace("/"," или ")
+            name = name.replace("/" , " или ")
             char_to_replace = "\\:?\"<>|*"
             for i in char_to_replace:
                 name = name.replace(i,"")
@@ -87,13 +88,13 @@ async def YT(message):
         await message.reply("что-то пошло не так")
     finally:
         os.remove(name)
-
+    
 @dp.message()
 async def TryParseNum(message):
         if True:
             id = int(message.text)
-            first = global_search_result["tracks"]["results"][id]
-            name = global_search_result["tracks"]["results"][id]["title"] + ', ' + global_search_result["tracks"]["results"][id]["artists"][0]["name"]
+            first = global_search_result[message.chat.id]["tracks"]["results"][id]
+            name = global_search_result[message.chat.id]["tracks"]["results"][id]["title"] + ', ' + global_search_result[message.chat.id]["tracks"]["results"][id]["artists"][0]["name"]
             name = name + ".mp3"
 
             specif = first.get_specific_download_info("mp3", 320)
